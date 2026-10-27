@@ -1,0 +1,42 @@
+name: pf-par-poc
+services:
+  pingfederate:
+    image: pingidentity/pingfederate:${PINGFEDERATE_IMAGE_TAG:-2606-13.1.0}
+    container_name: pf-par-poc
+    environment:
+      PING_IDENTITY_ACCEPT_EULA: "YES"
+      PING_IDENTITY_DEVOPS_USER: ${PING_IDENTITY_DEVOPS_USER:?Set licensed DevOps user}
+      PING_IDENTITY_DEVOPS_KEY: ${PING_IDENTITY_DEVOPS_KEY:?Set licensed DevOps key}
+      SERVER_PROFILE_URL: https://github.com/pingidentity/pingidentity-server-profiles.git
+      SERVER_PROFILE_PATH: getting-started/pingfederate
+    ports:
+      - "127.0.0.1:${PF_ADMIN_PORT:-9998}:9999"
+      - "127.0.0.1:${PF_RUNTIME_PORT:-9032}:9031"
+      - "127.0.0.1:${PAR_DEMO_PORT:-8789}:8789"
+    volumes:
+      - pingfederate-out:/opt/out
+    restart: unless-stopped
+  demo:
+    profiles: [demo]
+    image: pf-par-demo:local
+    build: ./demo
+    container_name: pf-par-demo
+    network_mode: service:pingfederate
+    environment:
+      PF_ISSUER: https://localhost:${PF_RUNTIME_PORT:-9032}
+      PF_INTERNAL_ORIGIN: https://localhost:9031
+      DEMO_ORIGIN: https://localhost:${PAR_DEMO_PORT:-8789}
+      CLIENT_ID: par-browser-demo
+      CLIENT_SECRET_FILE: /run/secrets/client-secret
+      SSL_CERT_FILE: /certs/ca.pem
+    volumes:
+      - ./certs:/certs:ro
+      - ./.local/client-secret:/run/secrets/client-secret:ro
+    restart: unless-stopped
+volumes:
+  pingfederate-out:
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: ${PAR_DOCKER_SUBNET:-10.233.0.0/24}

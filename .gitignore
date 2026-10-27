@@ -1,0 +1,12 @@
+.env
+.local/
+certs/*
+!certs/.gitkeep
+**/.terraform/
+**/*.tfstate*
+**/*.tfplan
+**/terraform.tfvars
+**/crash.log
+provider-schema.json
+__pycache__/
+.venv/
